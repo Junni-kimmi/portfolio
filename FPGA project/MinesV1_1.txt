@@ -1,0 +1,130 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 2019/12/12 22:07:27
+// Design Name: 
+// Module Name: MinesV1
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module MinesV1(clk, rst, direction, digit, seg);
+input clk, rst;
+input [4:0] direction;
+output [6:0] seg;
+reg [6:0] seg;
+reg [27:0] seg1, seg2;
+reg [13:0] seg1_1,seg1_2, seg2_1, seg2_2;
+output [7:0] digit;
+reg [7:0] digit;
+
+reg [31:0] count;
+reg clk_10000;
+reg life;
+reg [3:0] time_cnt;
+
+always@(posedge clk or negedge rst)begin
+    if(!rst) begin
+        life <= 1'b1;
+        time_cnt <= 4'b1111;
+    end
+    else begin 
+        if(time_cnt == 0) 
+        begin 
+            time_cnt <= 4'b0; 
+        end
+        else begin 
+            time_cnt <= time_cnt -1;
+        end
+    end
+end
+
+parameter zero = 7'b0000001, one = 7'b1001111, two = 7'b0010010, three = 7'b0000110, four = 7'b1001100, five = 7'b0100100, six = 7'b0100000, seven = 7'b0001111, eight = 7'b0000000, nine = 7'b0000100;
+parameter A = 7'b0001000, C = 7'b0110001, D = 7'b0000001, F = 7'b0111000, I =  7'b1001111, L = 7'b1110001, R = 7'b0001000, S = 7'b0100100, U = 7'b1000001, null = 7'b1111110;
+always@(direction)begin
+    case(direction)
+        5'b00001 : seg1_2 = {null, C};
+        5'b00010 : seg1_2 = {null, U};
+        5'b00100 : seg1_2 = {null, L};
+        5'b01000 : seg1_2 = {null, R};
+        5'b10000 : seg1_2 = {null, D};
+        default : seg1_2 = {null,null};
+    endcase
+end
+always@(life)begin
+    case(life)
+        1'b0 : seg2_1 = {L, zero};
+        1'b1 : seg2_1 = {L, one};
+        default : seg2_1 = {L,null};
+    endcase
+end
+always@(time_cnt)begin
+    case(time_cnt)
+        4'b0000 : seg2_2 = {zero, zero}; //0
+        4'b0001 : seg2_2 = {zero, one}; //1
+        4'b0010 : seg2_2 = {zero, two}; //2
+        4'b0011 : seg2_2 = {zero, three}; //3
+        4'b0100 : seg2_2 = {zero, four}; //4
+        4'b0101 : seg2_2 = {zero, five}; //5
+        4'b0110 : seg2_2 = {zero, six}; //6
+        4'b0111 : seg2_2 = {zero, seven}; //7
+        4'b1000 : seg2_2 = {zero, eight}; //8
+        4'b1001 : seg2_2 = {zero, nine}; //9
+        4'b1010 : seg2_2 = {one, zero}; //10
+        4'b1011 : seg2_2 = {one, one}; //11
+        4'b1100 : seg2_2 = {one, two}; //12
+        4'b1101 : seg2_2 = {one, three}; //13
+        4'b1110 : seg2_2 = {one, four}; //14
+        4'b1111 : seg2_2 = {one, five}; //15  
+        default : seg2_2 = {null,null};
+    endcase
+end
+always@(posedge clk or negedge rst)begin 
+    if(!rst)begin 
+        count <= 32'd0;
+        clk_10000 <= 0;
+    end
+    else begin
+        if(count == 'd10000) begin
+            count <= 32'd0;
+            clk_10000 <= ~clk_10000;
+        end
+        else begin
+            count <= count + 1;
+        end
+    end
+end
+always@(posedge clk_10000 or negedge rst)begin
+    if(!rst)begin 
+        digit <= 8'b11111110;
+    end
+    else if(clk_10000) begin
+        digit <= {digit[6:0], digit[7]};
+    end
+end
+always@(digit or seg1 or seg2)begin
+    case(digit) 
+        8'b11111110 : seg = seg1_1[6:0];
+        8'b11111101 : seg = seg1_1[13:7];
+        8'b11111011 : seg = seg1_2[6:0];
+        8'b11110111 : seg = seg1_2[13:7];
+        8'b11101111 : seg = seg2_1[6:0];
+        8'b11011111 : seg = seg2_1[13:7];
+        8'b10111111 : seg = seg2_2[6:0];
+        8'b01111111 : seg = seg2_2[13:7];
+        default : seg = {null, null, null, null};
+    endcase
+end
+endmodule
